@@ -1,0 +1,22 @@
+name: medias_picker_example
+description: Demonstrates how to use the medias_picker plugin.
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  cupertino_icons: ^0.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  medias_picker:
+    path: ../
+
+
+flutter:
+
+  uses-material-design: true
+
