@@ -48,6 +48,9 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
     public func galleryController(_ controller: GalleryController, didSelectImages images: [Image]) {
         DispatchQueue.global(qos: .userInitiated).async {
             let resultUrls : NSMutableArray = NSMutableArray()
+            let fileManager:FileManager = FileManager()
+            
+            SVProgressHUD.show()
             
             for image in images {
                 
@@ -72,19 +75,28 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                 }
                 
                 // Request Image
-                manager.requestImageData(for: image.asset, options: requestOptions, resultHandler: { (data, str, orientation, info) in
-                    if let info = info {
-                        if info.keys.contains(NSString(string: "PHImageFileURLKey")) {
-                            if let url = info[NSString(string: "PHImageFileURLKey")] as? NSURL {
-                                print(url)
-                                resultUrls.add(url.path ?? "")
-                            }
+                manager.requestImageData(for: image.asset, options: requestOptions) { data, _, _, _ in
+                    if let data = data {
+                        let img = UIImage(data: data)
+                        let nData = UIImageJPEGRepresentation(img!, 1.0)
+                        let guid = NSUUID().uuidString
+                        let tmpFile = String(format: "image_picker_%@.jpg", guid)
+                        let tmpDirec = NSTemporaryDirectory()
+                        let tmpPath = (tmpDirec as NSString).appendingPathComponent(tmpFile)
+                        
+                        if fileManager.createFile(atPath: tmpPath, contents: nData, attributes: nil) {
+                            print(tmpPath)
+                            resultUrls.add(tmpPath)
+                        } else {
+                            print("Erro")
                         }
+                        
                     }
-                })
+                }
             }
             
             self.result!(resultUrls)
+            SVProgressHUD.dismiss()
             controller.dismiss(animated: true, completion: nil)
         }
         

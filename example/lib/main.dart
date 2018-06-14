@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:medias_picker/medias_picker.dart';
@@ -11,16 +13,15 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-
+  List<dynamic> docPaths;
   @override
   initState() {
     super.initState();
     initPlatformState();
   }
-
+  
   // Platform messages are asynchronous, so we initialize in an async method.
   initPlatformState() async {
-    List<dynamic> docPaths;
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
       docPaths = await MediasPicker.pickMedias;
@@ -47,7 +48,11 @@ class _MyAppState extends State<MyApp> {
           title: new Text('Plugin example app'),
         ),
         body: new Center(
-          child: new Text('Running on: $_platformVersion\n'),
+          child: new Column(
+            children: <Widget>[
+              new Text('Running on: $_platformVersion\n'),
+            ],
+          ),
         ),
       ),
     );

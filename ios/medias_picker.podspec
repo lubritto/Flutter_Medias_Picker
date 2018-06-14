@@ -4,6 +4,7 @@
 Pod::Spec.new do |s|
   s.name             = 'medias_picker'
   s.version          = '0.0.1'
+  s.swift_version    = '4.1'
   s.summary          = 'A new Flutter plugin to get pictures and videos.'
   s.description      = <<-DESC
 A new Flutter plugin to get pictures and videos.
