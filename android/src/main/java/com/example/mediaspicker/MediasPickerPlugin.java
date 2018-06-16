@@ -43,8 +43,10 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
   public void onMethodCall(MethodCall call, Result result) {
     if (call.method.equals("pickMedias")) {
 
+      int quantity = call.argument("quantity");
+
       this.result = result;
-      FilePickerBuilder.getInstance().setMaxCount(10)
+      FilePickerBuilder.getInstance().setMaxCount(quantity)
               .enableVideoPicker(true)
               .enableImagePicker(true)
               .pickPhoto(activity);
@@ -61,10 +63,12 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
     if (requestCode == FilePickerConst.REQUEST_CODE_PHOTO){
       if (intent != null)
         docPaths = intent.getStringArrayListExtra(FilePickerConst.KEY_SELECTED_MEDIA);
+    
+      this.result.success(docPaths);
+    
+      return true;
     }
 
-    this.result.success(docPaths);
-
-    return true;
+    return false;
   }
 }

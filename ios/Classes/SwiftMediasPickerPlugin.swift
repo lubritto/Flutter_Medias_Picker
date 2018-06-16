@@ -33,6 +33,12 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         }
         if ("pickMedias" == call.method) {
             
+            guard let args = call.arguments as? [String: Int] else {
+                fatalError("args are formatted badly")
+            }
+            let quantity = args["quantity"]
+            Config.Camera.imageLimit = quantity!
+
             let gallery = GalleryController()
             gallery.delegate = self
             
