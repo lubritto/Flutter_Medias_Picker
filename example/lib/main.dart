@@ -24,7 +24,7 @@ class _MyAppState extends State<MyApp> {
   initPlatformState() async {
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      docPaths = await MediasPicker.pickMedias(7);
+      docPaths = await MediasPicker.pickMedias(7, 600, 80);
     } on PlatformException {
 
     }

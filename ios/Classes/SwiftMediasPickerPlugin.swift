@@ -7,6 +7,8 @@ import SVProgressHUD
 public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryControllerDelegate {
     private var result: FlutterResult?
     private var viewController: UIViewController?
+    private var maxWidth: Int?
+    private var quality: Int?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "medias_picker", binaryMessenger: registrar.messenger())
@@ -37,6 +39,9 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                 fatalError("args are formatted badly")
             }
             let quantity = args["quantity"]
+            maxWidth = args["maxWidth"]
+            quality = args["quality"]
+            
             Config.Camera.imageLimit = quantity!
 
             let gallery = GalleryController()
@@ -83,8 +88,9 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                 // Request Image
                 manager.requestImageData(for: image.asset, options: requestOptions) { data, _, _, _ in
                     if let data = data {
-                        let img = UIImage(data: data)
-                        let nData = UIImageJPEGRepresentation(img!, 1.0)
+                        var img = UIImage(data: data)
+                        img = self.ResizeImage(image: img!, targetSize: CGSize(width: Double(self.maxWidth!), height: 0.0))
+                        let nData = UIImageJPEGRepresentation(img!, (CGFloat(self.quality!) / CGFloat(100)))
                         let guid = NSUUID().uuidString
                         let tmpFile = String(format: "image_picker_%@.jpg", guid)
                         let tmpDirec = NSTemporaryDirectory()
@@ -107,6 +113,34 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         }
         
         
+    }
+    
+    func ResizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
+        let size = image.size
+        
+        let destHeight = targetSize.height / (image.size.width / targetSize.width)
+        
+        let widthRatio  = targetSize.width  / image.size.width
+        let heightRatio = destHeight / image.size.height
+        
+        // Figure out what our orientation is, and use that to form the rectangle
+        var newSize: CGSize
+        if(widthRatio > heightRatio) {
+            newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+        } else {
+            newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
+        }
+        
+        // This is the rect that we've calculated out and this is what is actually used below
+        let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+        
+        // Actually do the resizing to the rect using the ImageContext stuff
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: rect)
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage!
     }
     
     public func galleryController(_ controller: GalleryController, didSelectVideo video: Video) {
