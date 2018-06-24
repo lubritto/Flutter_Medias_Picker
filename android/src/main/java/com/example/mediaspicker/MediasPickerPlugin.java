@@ -64,6 +64,20 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
     } else if (call.method.equals("deleteAllTempFiles")) {
       DeleteAllTempFiles();
+    } else if (call.method.equals("compressImages")) {
+      maxWidth = call.argument("maxWidth");
+      quality = call.argument("quality");
+      ArrayList<String> imgPaths = call.argument("imgPaths");
+      ArrayList<String> newImgPaths = new ArrayList<>();
+
+      for (String path : imgPaths) {
+        String newPath = CompressImage(path, maxWidth, quality);
+
+        if (newPath != null && newPath != "")
+          newImgPaths.add(newPath);
+
+      }
+
     } else {
       result.notImplemented();
     }
@@ -77,11 +91,12 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
     int origWidth = b.getWidth();
     int origHeight = b.getHeight();
 
-    final int destWidth = maxWidth;//or the width you need
+    final int destWidth = maxWidth <= 0 ? origWidth : maxWidth;//or the width you need
 
     if(origWidth > destWidth){
       // picture is wider than we want it, we calculate its target height
-      int destHeight = origHeight/( origWidth / destWidth ) ;
+      double scale =  origWidth / (double)destWidth;
+      int destHeight = (int)(origHeight/scale);
       // we create an scaled bitmap so it reduces the image, not just trim it
       Bitmap b2 = Bitmap.createScaledBitmap(b, destWidth, destHeight, false);
       ByteArrayOutputStream outStream = new ByteArrayOutputStream();
