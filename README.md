@@ -38,6 +38,6 @@ You need to put these styles to plugin works
 and in your podfile 
 
 ```sh
-platform :ios, '10.0'
+platform :ios, '9.0'
 use_frameworks!
 ```
