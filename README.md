@@ -7,6 +7,8 @@ A new Flutter plugin to get pictures and videos.
 For help getting started with Flutter, view our online
 [documentation](https://flutter.io/).
 
+**This Plugin is under development, but alredy works in IOS and Android**
+
 For help on editing plugin code, view the [documentation](https://flutter.io/platform-plugins/#edit-code).
 
 You need to put these styles to plugin works
