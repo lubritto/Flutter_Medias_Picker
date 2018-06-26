@@ -51,6 +51,25 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             
             viewController?.present(gallery, animated: true)
 
+        } else if ("compressImages" == call.method) {
+            var args = call.arguments as? [String: Any?]
+            
+            maxWidth = args!["maxWidth"] as? Int
+            quality = args!["quality"] as? Int
+            
+            let imgPaths = args!["imgPaths"] as! [String]
+            
+            let resultUrls : NSMutableArray = NSMutableArray()
+            let fileManager:FileManager = FileManager()
+            
+            for path in imgPaths {
+                let newPath = self.CompressImage(fileName: path, targetSize: CGSize(width: Double(self.maxWidth!), height: 0.0), fileManager: fileManager)
+                
+                if (newPath != "") {
+                    resultUrls.add(newPath)
+                }
+            }
+            
         } else {
             result(FlutterMethodNotImplemented)
         }
@@ -86,9 +105,9 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                 }
                 
                 // Request Image
-                manager.requestImageData(for: image.asset, options: requestOptions) { data, _, _, _ in
-                    if let data = data {
-                        var img = UIImage(data: data)
+                manager.requestImageData(for: image.asset, options: requestOptions, resultHandler: { (data, _, _, _) in
+                    if data != nil {
+                        var img = UIImage(data: data!)
                         img = self.ResizeImage(image: img!, targetSize: CGSize(width: Double(self.maxWidth!), height: 0.0))
                         let nData = UIImageJPEGRepresentation(img!, (CGFloat(self.quality!) / CGFloat(100)))
                         let guid = NSUUID().uuidString
@@ -104,7 +123,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                         }
                         
                     }
-                }
+                })
             }
             
             self.result!(resultUrls)
@@ -115,32 +134,97 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         
     }
     
+    func CompressImage(fileName: String, targetSize: CGSize, fileManager: FileManager) -> String {
+        
+        var imgData : Data? = nil;
+        
+        do {
+            imgData = try Data(contentsOf: URL(fileURLWithPath: fileName))
+            
+        } catch {
+            print(error)
+        }
+        
+        let image = UIImage(data: imgData!)!
+        
+        let size = image.size
+        
+        let destHeight =  size.height / (size.width / targetSize.width)
+        let destWidth = targetSize.width <= 0 ? size.width : targetSize.width;
+        
+        let widthRatio  = targetSize.width  / size.width
+        let heightRatio = destHeight / size.height
+        
+        if (size.width >= destWidth) {
+            // Figure out what our orientation is, and use that to form the rectangle
+            var newSize: CGSize
+            if(widthRatio > heightRatio) {
+                newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+            } else {
+                newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
+            }
+            
+            // This is the rect that we've calculated out and this is what is actually used below
+            let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+            
+            // Actually do the resizing to the rect using the ImageContext stuff
+            UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+            image.draw(in: rect)
+            let newImage = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            
+            let nData = UIImageJPEGRepresentation(newImage!, (CGFloat(self.quality!) / CGFloat(100)))
+            let guid = NSUUID().uuidString
+            let tmpFile = String(format: "image_picker_%@.jpg", guid)
+            let tmpDirec = NSTemporaryDirectory()
+            let tmpPath = (tmpDirec as NSString).appendingPathComponent(tmpFile)
+            
+            if fileManager.createFile(atPath: tmpPath, contents: nData, attributes: nil) {
+                print(tmpPath)
+                return tmpPath
+            } else {
+                print("Erro")
+                return ""
+            }
+        }
+        else {
+            return fileName
+        }
+        
+        
+    }
+    
     func ResizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
         let size = image.size
         
-        let destHeight = targetSize.height / (image.size.width / targetSize.width)
+        let destHeight = size.height / (size.width / targetSize.width)
+        let destWidth = targetSize.width <= 0 ? size.width : targetSize.width;
         
-        let widthRatio  = targetSize.width  / image.size.width
-        let heightRatio = destHeight / image.size.height
+        let widthRatio  = targetSize.width  / size.width
+        let heightRatio = destHeight / size.height
         
-        // Figure out what our orientation is, and use that to form the rectangle
-        var newSize: CGSize
-        if(widthRatio > heightRatio) {
-            newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+        if (size.width > destWidth) {
+            // Figure out what our orientation is, and use that to form the rectangle
+            var newSize: CGSize
+            if(widthRatio > heightRatio) {
+                newSize = CGSize(width: size.width * heightRatio, height: size.height * heightRatio)
+            } else {
+                newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
+            }
+            
+            // This is the rect that we've calculated out and this is what is actually used below
+            let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
+            
+            // Actually do the resizing to the rect using the ImageContext stuff
+            UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+            image.draw(in: rect)
+            let newImage = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            
+            return newImage!
         } else {
-            newSize = CGSize(width: size.width * widthRatio, height: size.height * widthRatio)
+            return image
         }
-        
-        // This is the rect that we've calculated out and this is what is actually used below
-        let rect = CGRect(x: 0, y: 0, width: newSize.width, height: newSize.height)
-        
-        // Actually do the resizing to the rect using the ImageContext stuff
-        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
-        image.draw(in: rect)
-        let newImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        
-        return newImage!
     }
     
     public func galleryController(_ controller: GalleryController, didSelectVideo video: Video) {

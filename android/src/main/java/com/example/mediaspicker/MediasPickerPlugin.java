@@ -93,7 +93,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
     final int destWidth = maxWidth <= 0 ? origWidth : maxWidth;//or the width you need
 
-    if(origWidth > destWidth){
+    if(origWidth >= destWidth){
       // picture is wider than we want it, we calculate its target height
       double scale =  origWidth / (double)destWidth;
       int destHeight = (int)(origHeight/scale);
@@ -127,6 +127,10 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+    else
+    {
+      return filename;
     }
     return "";
   }
