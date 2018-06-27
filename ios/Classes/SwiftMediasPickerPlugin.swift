@@ -70,6 +70,8 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                 }
             }
             
+            self.result!(resultUrls)
+            
         } else {
             result(FlutterMethodNotImplemented)
         }

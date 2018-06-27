@@ -75,8 +75,10 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
         if (newPath != null && newPath != "")
           newImgPaths.add(newPath);
-
+          
       }
+
+      this.result.success(newImgPaths);
 
     } else {
       result.notImplemented();
@@ -140,7 +142,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
             + File.separator + "TempImgs" + File.separator;
 
     File tempDir = new File(tempDirPath);
-    if (!tempDir.exists()){
+    if (tempDir.exists()){
       if (tempDir.delete())
         result.success(true);
       else
