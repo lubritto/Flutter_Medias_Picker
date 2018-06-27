@@ -22,7 +22,6 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         
         Config.Camera.imageLimit = 10
         Config.Camera.recordLocation = true
-        Config.tabsToShow = [.imageTab, .cameraTab, .videoTab]
         
         self.viewController = viewController
         
@@ -33,7 +32,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             self.result!(FlutterError(code: "multiple_request", message: "Cancelled by a second request", details: nil))
             self.result = nil
         }
-        if ("pickMedias" == call.method) {
+        if ("pickImages" == call.method) {
             
             guard let args = call.arguments as? [String: Int] else {
                 fatalError("args are formatted badly")
@@ -43,6 +42,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             quality = args["quality"]
             
             Config.Camera.imageLimit = quantity!
+            Config.tabsToShow = [.imageTab, .cameraTab]
 
             let gallery = GalleryController()
             gallery.delegate = self
@@ -51,6 +51,22 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             
             viewController?.present(gallery, animated: true)
 
+        } else if ("pickVideos" == call.method) {
+            guard let args = call.arguments as? [String: Int] else {
+                fatalError("args are formatted badly")
+            }
+            let quantity = args["quantity"]
+            
+            Config.Camera.imageLimit = quantity!
+            Config.tabsToShow = [.videoTab]
+            
+            let gallery = GalleryController()
+            gallery.delegate = self
+            
+            self.result = result
+            
+            viewController?.present(gallery, animated: true)
+            
         } else if ("compressImages" == call.method) {
             var args = call.arguments as? [String: Any?]
             
@@ -69,6 +85,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                     resultUrls.add(newPath)
                 }
             }
+            self.result = result
             
             self.result!(resultUrls)
             
@@ -230,7 +247,70 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
     }
     
     public func galleryController(_ controller: GalleryController, didSelectVideo video: Video) {
+        DispatchQueue.global(qos: .userInitiated).async {
         
+            let manager = PHImageManager.default()
+            
+            let fileManager:FileManager = FileManager()
+            let resultUrls : NSMutableArray = NSMutableArray()
+            
+            let requestOptions = PHVideoRequestOptions()
+            requestOptions.version = .original
+            requestOptions.deliveryMode = .highQualityFormat;
+            requestOptions.isNetworkAccessAllowed = true;
+            
+            
+            requestOptions.progressHandler = { (progress, error, stop, info) in
+                if(progress == 1.0){
+                    DispatchQueue.main.async {
+                        SVProgressHUD.dismiss()
+                    }
+                    print("Finished")
+                } else {
+                    DispatchQueue.main.async {
+                        SVProgressHUD.showProgress(Float(progress), status: "Downloading from iCloud")
+                    }
+                    print("Downloading from cloud")
+                }
+            }
+        
+            let semaphore = DispatchSemaphore(value: 0)
+            
+            manager.requestAVAsset(forVideo: video.asset, options: requestOptions, resultHandler: { (asset, audioMix, info) in
+                if asset != nil, let urlAsset = asset as? AVURLAsset {
+                    let localVideoUrl = urlAsset.url
+                    var nData : Data? = nil;
+                    
+                    do {
+                        nData = try Data(contentsOf: localVideoUrl)
+                        
+                    } catch {
+                        print(error)
+                    }
+                    
+                    let guid = NSUUID().uuidString
+                    let tmpFile = String(format: "image_picker_%@.mp4", guid)
+                    let tmpDirec = NSTemporaryDirectory()
+                    let tmpPath = (tmpDirec as NSString).appendingPathComponent(tmpFile)
+                    
+                    if fileManager.createFile(atPath: tmpPath, contents: nData, attributes: nil) {
+                        print(tmpPath)
+                        resultUrls.add(tmpPath)
+                    } else {
+                        print("Erro")
+                    }
+                }
+                
+                semaphore.signal()
+            })
+            
+            semaphore.wait(timeout: .distantFuture)
+            
+            self.result!(resultUrls)
+            SVProgressHUD.dismiss()
+            controller.dismiss(animated: true, completion: nil)
+        }
+
     }
     
     public func galleryController(_ controller: GalleryController, requestLightbox images: [Image]) {

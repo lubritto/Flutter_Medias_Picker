@@ -17,21 +17,21 @@ class _MyAppState extends State<MyApp> {
   @override
   initState() {
     super.initState();
-    initPlatformState();
   }
   
-  // Platform messages are asynchronous, so we initialize in an async method.
-  initPlatformState() async {
-    // Platform messages may fail, so we use a try/catch PlatformException.
+  pickImages() async {
     try {
-      docPaths = await MediasPicker.pickMedias(quantity: 7, maxWidth: 600, quality: 80);
+      docPaths = await MediasPicker.pickImages(quantity: 7, maxWidth: 600, quality: 100);
+      
+      String firstPath = docPaths[0] as String;
+
+      List<dynamic> listCompressed = await MediasPicker.compressImages(imgPaths: [firstPath], maxWidth: 200, quality: 100);
+      print(listCompressed);
+
     } on PlatformException {
 
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted)
       return;
 
@@ -39,6 +39,22 @@ class _MyAppState extends State<MyApp> {
       _platformVersion = docPaths.toString();
     });
   }
+
+  pickVideos() async {
+    try {
+      docPaths = await MediasPicker.pickVideos(quantity: 7);
+    } on PlatformException {
+
+    }
+
+    if (!mounted)
+      return;
+
+    setState(() {
+      _platformVersion = docPaths.toString();
+    });
+  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +67,39 @@ class _MyAppState extends State<MyApp> {
           child: new Column(
             children: <Widget>[
               new Text('Running on: $_platformVersion\n'),
+              new MaterialButton(
+                child: new Text(
+                  "Pick image",
+                ),
+                onPressed: () {
+                  pickImages();
+                },
+              ),
+              new MaterialButton(
+                child: new Text(
+                  "Pick videos",
+                ),
+                onPressed: () {
+                  pickVideos();
+                },
+              ),
+              new MaterialButton(
+                child: new Text(
+                  "Delete temp folder (automatic on ios)",
+                ),
+                onPressed: () async {
+                  
+                  if (await MediasPicker.deleteAllTempFiles()) {
+                    setState(() {
+                      _platformVersion = "deleted";             
+                    });
+                  } else {
+                    setState(() {
+                      _platformVersion = "not deleted";             
+                    });
+                  }
+                },
+              ),
             ],
           ),
         ),

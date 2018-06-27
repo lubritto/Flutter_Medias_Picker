@@ -11,6 +11,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.media.ExifInterface;
 import android.os.Environment;
 
 import droidninja.filepicker.FilePickerBuilder;
@@ -34,6 +38,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
   private Activity activity;
   private Result result;
   private int maxWidth, quality;
+  private boolean isPhoto;
 
   private MediasPickerPlugin(Activity activity) {
     this.activity = activity;
@@ -49,7 +54,9 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
-    if (call.method.equals("pickMedias")) {
+    if (call.method.equals("pickImages")) {
+
+      isPhoto = true;
 
       int quantity = call.argument("quantity");
       maxWidth = call.argument("maxWidth");
@@ -57,12 +64,25 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
       this.result = result;
       FilePickerBuilder.getInstance().setMaxCount(quantity)
-              .enableVideoPicker(true)
+              .enableVideoPicker(false)
               .enableImagePicker(true)
               .pickPhoto(activity);
 
 
+    } else if (call.method.equals("pickVideos")) {
+
+      isPhoto = false;
+
+      int quantity = call.argument("quantity");
+
+      this.result = result;
+      FilePickerBuilder.getInstance().setMaxCount(quantity)
+              .enableVideoPicker(true)
+              .enableImagePicker(false)
+              .pickPhoto(activity);
+
     } else if (call.method.equals("deleteAllTempFiles")) {
+      this.result = result;
       DeleteAllTempFiles();
     } else if (call.method.equals("compressImages")) {
       maxWidth = call.argument("maxWidth");
@@ -77,7 +97,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
           newImgPaths.add(newPath);
           
       }
-
+      this.result = result;
       this.result.success(newImgPaths);
 
     } else {
@@ -137,18 +157,26 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
     return "";
   }
 
+
   public void DeleteAllTempFiles(){
     String tempDirPath = Environment.getExternalStorageDirectory()
             + File.separator + "TempImgs" + File.separator;
 
     File tempDir = new File(tempDirPath);
     if (tempDir.exists()){
+
+      String[] children = tempDir.list();
+      for (int i = 0; i < children.length; i++)
+      {
+        new File(tempDir, children[i]).delete();
+      }
+
       if (tempDir.delete())
-        result.success(true);
+        this.result.success(true);
       else
-        result.success(false);
+        this.result.success(false);
     } else {
-      result.success(false);
+      this.result.success(true);
     }
   }
 
@@ -162,13 +190,18 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
       if (intent != null){
         ArrayList<String> paths = intent.getStringArrayListExtra(FilePickerConst.KEY_SELECTED_MEDIA);
 
-        for(String item: paths){
+        if (isPhoto) {
+          for(String item: paths){
 
-          String path = CompressImage(item, maxWidth, quality);
+            String path = CompressImage(item, maxWidth, quality);
 
-          if (path != null)
-            docPaths.add(path);
+            if (path != null)
+              docPaths.add(path);
+          }
+        } else {
+          docPaths = paths;
         }
+
       }
     
       this.result.success(docPaths);

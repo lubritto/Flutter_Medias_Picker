@@ -7,7 +7,7 @@ class MediasPicker {
   static const MethodChannel _channel =
       const MethodChannel('medias_picker');
 
-  static Future<List<dynamic>> pickMedias({@required int quantity, int maxWidth, int quality}) async {
+  static Future<List<dynamic>> pickImages({@required int quantity, int maxWidth, int quality}) async {
 
     if (maxWidth != null && maxWidth < 0) {
       throw new ArgumentError.value(maxWidth, 'maxWidth cannot be negative');
@@ -17,13 +17,22 @@ class MediasPicker {
       throw new ArgumentError.value(maxWidth, 'quality cannot be negative and cannot be bigger then 100');
     }
 
-    final List<dynamic> docsPaths = await _channel.invokeMethod('pickMedias', <String, dynamic>{
+    final List<dynamic> docsPaths = await _channel.invokeMethod('pickImages', <String, dynamic>{
         'quantity': quantity,
         'maxWidth': maxWidth ?? 0,
         'quality': quality ?? 100,
       });
     return docsPaths;
   }
+
+  static Future<List<dynamic>> pickVideos({@required int quantity}) async {
+
+    final List<dynamic> docsPaths = await _channel.invokeMethod('pickVideos', <String, dynamic>{
+        'quantity': quantity,
+      });
+    return docsPaths;
+  }
+
 
   static Future<List<dynamic>> compressImages({@required List<String> imgPaths, int maxWidth, int quality}) async {
 
