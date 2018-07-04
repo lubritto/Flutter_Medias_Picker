@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -16,6 +18,8 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.media.ExifInterface;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 
 import droidninja.filepicker.FilePickerBuilder;
 import droidninja.filepicker.FilePickerConst;
@@ -30,14 +34,15 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 /**
  * MediasPickerPlugin
  */
-public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.ActivityResultListener {
+public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.ActivityResultListener, PluginRegistry.RequestPermissionsResultListener {
   /**
    * Plugin registration.
    */
 
+
   private Activity activity;
   private Result result;
-  private int maxWidth, quality;
+  private int maxWidth, maxHeight, quality;
   private boolean isPhoto;
 
   private MediasPickerPlugin(Activity activity) {
@@ -54,12 +59,14 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
+
     if (call.method.equals("pickImages")) {
 
       isPhoto = true;
 
       int quantity = call.argument("quantity");
       maxWidth = call.argument("maxWidth");
+      maxHeight = call.argument("maxWidth");
       quality = call.argument("quality");
 
       this.result = result;
@@ -86,12 +93,13 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
       DeleteAllTempFiles();
     } else if (call.method.equals("compressImages")) {
       maxWidth = call.argument("maxWidth");
+      maxHeight = call.argument("maxWidth");
       quality = call.argument("quality");
       ArrayList<String> imgPaths = call.argument("imgPaths");
       ArrayList<String> newImgPaths = new ArrayList<>();
 
       for (String path : imgPaths) {
-        String newPath = CompressImage(path, maxWidth, quality);
+        String newPath = CompressImage(path, maxWidth, maxHeight, quality);
 
         if (newPath != null && newPath != "")
           newImgPaths.add(newPath);
@@ -100,62 +108,142 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
       this.result = result;
       this.result.success(newImgPaths);
 
+    } else if (call.method.equals("checkPermission")) {
+        result.success(checkPermission());
+    } else if (call.method.equals("requestPermission")) {
+        this.result = result;
+        requestPermission();
     } else {
       result.notImplemented();
     }
   }
 
-  public String CompressImage(String filename, int maxWidth, int quality) {
-    // we'll start with the original picture already open to a file
-    File imgFileOrig = new File(filename); //change "getPic()" for whatever you need to open the image file.
-    Bitmap b = BitmapFactory.decodeFile(imgFileOrig.getAbsolutePath());
-    // original measurements
-    int origWidth = b.getWidth();
-    int origHeight = b.getHeight();
+  public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+    final int height = options.outHeight;
+    final int width = options.outWidth;
+    int inSampleSize = 1;
 
-    final int destWidth = maxWidth <= 0 ? origWidth : maxWidth;//or the width you need
-
-    if(origWidth >= destWidth){
-      // picture is wider than we want it, we calculate its target height
-      double scale =  origWidth / (double)destWidth;
-      int destHeight = (int)(origHeight/scale);
-      // we create an scaled bitmap so it reduces the image, not just trim it
-      Bitmap b2 = Bitmap.createScaledBitmap(b, destWidth, destHeight, false);
-      ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-      // compress to the format you want, JPEG, PNG...
-      // 70 is the 0-100 quality percentage
-      b2.compress(Bitmap.CompressFormat.JPEG, quality , outStream);
-      // we save the file, at least until we have made use of it
-      String tempDirPath = Environment.getExternalStorageDirectory()
-              + File.separator + "TempImgs" + File.separator;
-      String path = tempDirPath + UUID.randomUUID().toString() + ".jpg";
-
-      File tempDir = new File(tempDirPath);
-
-      File f = new File(path);
-      try {
-        if (!tempDir.exists())
-          tempDir.mkdirs();
-
-        f.createNewFile();
-
-        //write the bytes in file
-        FileOutputStream fo = new FileOutputStream(f);
-        fo.write(outStream.toByteArray());
-        // remember close de FileOutput
-        fo.close();
-
-        return path;
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    if (height > reqHeight || width > reqWidth) {
+      final int heightRatio = Math.round((float) height / (float) reqHeight);
+      final int widthRatio = Math.round((float) width / (float) reqWidth);
+      inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
     }
-    else
-    {
-      return filename;
+    final float totalPixels = width * height;
+    final float totalReqPixelsCap = reqWidth * reqHeight * 2;
+    while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
+      inSampleSize++;
     }
-    return "";
+    return inSampleSize;
   }
+
+
+    public String CompressImage(String filename, int maxWidth, int maxHeight, int quality) {
+
+        Bitmap scaledBitmap = null;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        Bitmap bmp = BitmapFactory.decodeFile(filename, options);
+
+        int actualHeight = options.outHeight;
+        int actualWidth = options.outWidth;
+
+        float imgRatio = (float) actualWidth / (float) actualHeight;
+        float maxRatio = (float)maxWidth / (float)maxHeight;
+
+        if (actualHeight > maxHeight || actualWidth > maxWidth) {
+            if (imgRatio < maxRatio) {
+                imgRatio = (float)maxHeight / actualHeight;
+                actualWidth = (int) (imgRatio * actualWidth);
+                actualHeight = maxHeight;
+            } else if (imgRatio > maxRatio) {
+                imgRatio = (float)maxWidth / actualWidth;
+                actualHeight = (int) (imgRatio * actualHeight);
+                actualWidth = maxWidth;
+            }
+        }
+
+        options.inSampleSize = calculateInSampleSize(options, actualWidth, actualHeight);
+        options.inJustDecodeBounds = false;
+        options.inDither = false;
+        options.inPurgeable = true;
+        options.inInputShareable = true;
+        options.inTempStorage = new byte[16 * 1024];
+
+        try {
+            bmp = BitmapFactory.decodeFile(filename, options);
+        } catch (OutOfMemoryError exception) {
+            exception.printStackTrace();
+        }
+        try {
+            scaledBitmap = Bitmap.createBitmap(actualWidth, actualHeight, Bitmap.Config.RGB_565);
+        } catch (OutOfMemoryError exception) {
+            exception.printStackTrace();
+        }
+
+        float ratioX = actualWidth / (float) options.outWidth;
+        float ratioY = actualHeight / (float) options.outHeight;
+        float middleX = actualWidth / 2.0f;
+        float middleY = actualHeight / 2.0f;
+
+        Matrix scaleMatrix = new Matrix();
+        scaleMatrix.setScale(ratioX, ratioY, middleX, middleY);
+        Canvas canvas = new Canvas(scaledBitmap);
+        canvas.setMatrix(scaleMatrix);
+        canvas.drawBitmap(bmp, middleX - bmp.getWidth() / 2, middleY - bmp.getHeight() / 2, new Paint(Paint.FILTER_BITMAP_FLAG));
+
+        if (bmp != null) {
+            bmp.recycle();
+        }
+
+        ExifInterface exif;
+
+        try {
+            exif = new ExifInterface(filename);
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0);
+            Matrix matrix = new Matrix();
+            if (orientation == 6) {
+                matrix.postRotate(90);
+            } else if (orientation == 3) {
+                matrix.postRotate(180);
+            } else if (orientation == 8) {
+                matrix.postRotate(270);
+            }
+            scaledBitmap = Bitmap.createBitmap(scaledBitmap, 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        // compress to the format you want, JPEG, PNG...
+        // 70 is the 0-100 quality percentage
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality , outStream);
+
+        String tempDirPath = Environment.getExternalStorageDirectory()
+                + File.separator + "TempImgs" + File.separator;
+        String path = tempDirPath + UUID.randomUUID().toString() + ".jpg";
+
+        File tempDir = new File(tempDirPath);
+
+        File f = new File(path);
+        try {
+            if (!tempDir.exists())
+                tempDir.mkdirs();
+
+            f.createNewFile();
+
+            //write the bytes in file
+            FileOutputStream fo = new FileOutputStream(f);
+            fo.write(outStream.toByteArray());
+            // remember close de FileOutput
+            fo.close();
+
+            return path;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return filename;
+    }
 
 
   public void DeleteAllTempFiles(){
@@ -180,6 +268,25 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
     }
   }
 
+    private void requestPermission() {
+        String[] perm = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        ActivityCompat.requestPermissions(activity, perm, 0);
+    }
+
+    private boolean checkPermission() {
+        return PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    }
+
+    @Override
+    public boolean onRequestPermissionsResult(int requestCode, String[] strings, int[] grantResults) {
+        boolean res = false;
+        if (requestCode == 0 && grantResults.length > 0) {
+            res = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            result.success(res);
+        }
+        return res;
+    }
+
   @Override
   public boolean onActivityResult(int requestCode, int resultCode, Intent intent) {
 
@@ -193,7 +300,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
         if (isPhoto) {
           for(String item: paths){
 
-            String path = CompressImage(item, maxWidth, quality);
+            String path = CompressImage(item, maxWidth, maxHeight , quality);
 
             if (path != null)
               docPaths.add(path);

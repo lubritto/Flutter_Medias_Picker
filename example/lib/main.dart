@@ -21,11 +21,17 @@ class _MyAppState extends State<MyApp> {
   
   pickImages() async {
     try {
-      docPaths = await MediasPicker.pickImages(quantity: 7, maxWidth: 600, quality: 100);
+
+      if (Platform.isAndroid)
+        if (!await MediasPicker.checkPermission())
+          if (!await MediasPicker.requestPermission())
+            return;
+
+      docPaths = await MediasPicker.pickImages(quantity: 7, maxWidth: 1024, maxHeight: 1024, quality: 85);
       
       String firstPath = docPaths[0] as String;
 
-      List<dynamic> listCompressed = await MediasPicker.compressImages(imgPaths: [firstPath], maxWidth: 200, quality: 100);
+      List<dynamic> listCompressed = await MediasPicker.compressImages(imgPaths: [firstPath], maxWidth: 600, maxHeight: 600, quality: 100);
       print(listCompressed);
 
     } on PlatformException {

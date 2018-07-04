@@ -8,6 +8,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
     private var result: FlutterResult?
     private var viewController: UIViewController?
     private var maxWidth: Int?
+    private var maxHeight: Int?
     private var quality: Int?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -39,6 +40,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             }
             let quantity = args["quantity"]
             maxWidth = args["maxWidth"]
+            maxHeight = args["maxHeight"]
             quality = args["quality"]
             
             Config.Camera.imageLimit = quantity!
@@ -71,6 +73,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             var args = call.arguments as? [String: Any?]
             
             maxWidth = args!["maxWidth"] as? Int
+            maxHeight = args!["maxHeight"] as? Int
             quality = args!["quality"] as? Int
             
             let imgPaths = args!["imgPaths"] as! [String]
@@ -79,7 +82,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             let fileManager:FileManager = FileManager()
             
             for path in imgPaths {
-                let newPath = self.CompressImage(fileName: path, targetSize: CGSize(width: Double(self.maxWidth!), height: 0.0), fileManager: fileManager)
+                let newPath = self.CompressImage(fileName: path, targetSize: CGSize(width: Double(self.maxWidth!), height: Double(self.maxHeight!)), fileManager: fileManager)
                 
                 if (newPath != "") {
                     resultUrls.add(newPath)
@@ -127,7 +130,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                 manager.requestImageData(for: image.asset, options: requestOptions, resultHandler: { (data, _, _, _) in
                     if data != nil {
                         var img = UIImage(data: data!)
-                        img = self.ResizeImage(image: img!, targetSize: CGSize(width: Double(self.maxWidth!), height: 0.0))
+                        img = self.ResizeImage(image: img!, targetSize: CGSize(width: Double(self.maxWidth!), height: Double(self.maxHeight!)))
                         let nData = UIImageJPEGRepresentation(img!, (CGFloat(self.quality!) / CGFloat(100)))
                         let guid = NSUUID().uuidString
                         let tmpFile = String(format: "image_picker_%@.jpg", guid)
@@ -168,13 +171,13 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         
         let size = image.size
         
-        let destHeight =  size.height / (size.width / targetSize.width)
+        let destHeight = targetSize.height <= 0 ? size.height : targetSize.height;
         let destWidth = targetSize.width <= 0 ? size.width : targetSize.width;
         
         let widthRatio  = targetSize.width  / size.width
-        let heightRatio = destHeight / size.height
+        let heightRatio = targetSize.height / size.height
         
-        if (size.width >= destWidth) {
+        if (size.width >= destWidth || size.height >= destHeight) {
             // Figure out what our orientation is, and use that to form the rectangle
             var newSize: CGSize
             if(widthRatio > heightRatio) {
@@ -216,13 +219,13 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
     func ResizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
         let size = image.size
         
-        let destHeight = size.height / (size.width / targetSize.width)
+        let destHeight = targetSize.height <= 0 ? size.height : targetSize.height;
         let destWidth = targetSize.width <= 0 ? size.width : targetSize.width;
         
         let widthRatio  = targetSize.width  / size.width
-        let heightRatio = destHeight / size.height
+        let heightRatio = targetSize.height / size.height
         
-        if (size.width > destWidth) {
+        if (size.width > destWidth || size.height >= destHeight) {
             // Figure out what our orientation is, and use that to form the rectangle
             var newSize: CGSize
             if(widthRatio > heightRatio) {
