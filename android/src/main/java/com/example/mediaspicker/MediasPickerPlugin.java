@@ -66,7 +66,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
 
       int quantity = call.argument("quantity");
       maxWidth = call.argument("maxWidth");
-      maxHeight = call.argument("maxWidth");
+      maxHeight = call.argument("maxHeight");
       quality = call.argument("quality");
 
       this.result = result;
@@ -93,7 +93,7 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
       DeleteAllTempFiles();
     } else if (call.method.equals("compressImages")) {
       maxWidth = call.argument("maxWidth");
-      maxHeight = call.argument("maxWidth");
+      maxHeight = call.argument("maxHeight");
       quality = call.argument("quality");
       ArrayList<String> imgPaths = call.argument("imgPaths");
       ArrayList<String> newImgPaths = new ArrayList<>();

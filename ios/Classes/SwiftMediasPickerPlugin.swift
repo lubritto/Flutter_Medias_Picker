@@ -174,8 +174,8 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         let destHeight = targetSize.height <= 0 ? size.height : targetSize.height;
         let destWidth = targetSize.width <= 0 ? size.width : targetSize.width;
         
-        let widthRatio  = targetSize.width  / size.width
-        let heightRatio = targetSize.height / size.height
+        let widthRatio  = destWidth / size.width
+        let heightRatio = destHeight / size.height
         
         if (size.width >= destWidth || size.height >= destHeight) {
             // Figure out what our orientation is, and use that to form the rectangle
@@ -222,10 +222,10 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
         let destHeight = targetSize.height <= 0 ? size.height : targetSize.height;
         let destWidth = targetSize.width <= 0 ? size.width : targetSize.width;
         
-        let widthRatio  = targetSize.width  / size.width
-        let heightRatio = targetSize.height / size.height
+        let widthRatio  = destWidth / size.width
+        let heightRatio = destHeight / size.height
         
-        if (size.width > destWidth || size.height >= destHeight) {
+        if (size.width > destWidth || size.height > destHeight) {
             // Figure out what our orientation is, and use that to form the rectangle
             var newSize: CGSize
             if(widthRatio > heightRatio) {
