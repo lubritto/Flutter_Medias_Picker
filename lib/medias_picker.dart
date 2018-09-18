@@ -21,6 +21,10 @@ class MediasPicker {
       throw new ArgumentError.value(maxWidth, 'quality cannot be negative and cannot be bigger then 100');
     }
 
+    if (!await checkPermission())
+      if (!await requestPermission())
+        return [];
+
     final List<dynamic> docsPaths = await _channel.invokeMethod('pickImages', <String, dynamic>{
         'quantity': quantity,
         'maxWidth': maxWidth ?? 0,
@@ -31,6 +35,10 @@ class MediasPicker {
   }
 
   static Future<List<dynamic>> pickVideos({@required int quantity}) async {
+
+    if (!await checkPermission())
+      if (!await requestPermission())
+        return [];
 
     final List<dynamic> docsPaths = await _channel.invokeMethod('pickVideos', <String, dynamic>{
         'quantity': quantity,
@@ -56,6 +64,10 @@ class MediasPicker {
     if (quality != null && (quality < 0 || quality > 100)) {
       throw new ArgumentError.value(quality, 'quality cannot be negative and cannot be bigger then 100');
     }
+
+    if (!await checkPermission())
+      if (!await requestPermission())
+        return [];
 
     final List<dynamic> docsPaths = await _channel.invokeMethod('compressImages', <String, dynamic>{
       'imgPaths': imgPaths,

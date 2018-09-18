@@ -22,11 +22,6 @@ class _MyAppState extends State<MyApp> {
   pickImages() async {
     try {
 
-      if (Platform.isAndroid)
-        if (!await MediasPicker.checkPermission())
-          if (!await MediasPicker.requestPermission())
-            return;
-
       docPaths = await MediasPicker.pickImages(quantity: 7, maxWidth: 1024, maxHeight: 1024, quality: 85);
       
       String firstPath = docPaths[0] as String;

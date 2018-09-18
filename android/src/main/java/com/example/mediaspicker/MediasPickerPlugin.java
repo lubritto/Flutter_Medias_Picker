@@ -53,7 +53,9 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "medias_picker");
     MediasPickerPlugin plugin = new MediasPickerPlugin(registrar.activity());
     channel.setMethodCallHandler(plugin);
+
     registrar.addActivityResultListener(plugin);
+    registrar.addRequestPermissionsResultListener(plugin);
   }
 
 
@@ -135,7 +137,6 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
     }
     return inSampleSize;
   }
-
 
     public String CompressImage(String filename, int maxWidth, int maxHeight, int quality) {
 
@@ -269,19 +270,28 @@ public class MediasPickerPlugin implements MethodCallHandler, PluginRegistry.Act
   }
 
     private void requestPermission() {
-        String[] perm = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        String[] perm = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
         ActivityCompat.requestPermissions(activity, perm, 0);
     }
 
     private boolean checkPermission() {
-        return PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        return PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                && PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(activity, Manifest.permission.CAMERA);
     }
 
     @Override
-    public boolean onRequestPermissionsResult(int requestCode, String[] strings, int[] grantResults) {
+    public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         boolean res = false;
+
         if (requestCode == 0 && grantResults.length > 0) {
-            res = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            res = true;
+
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    res = false;
+                }
+            }
+
             result.success(res);
         }
         return res;
