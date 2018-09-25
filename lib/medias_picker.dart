@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
@@ -21,9 +22,10 @@ class MediasPicker {
       throw new ArgumentError.value(maxWidth, 'quality cannot be negative and cannot be bigger then 100');
     }
 
-    if (!await checkPermission())
-      if (!await requestPermission())
-        return [];
+    if (Platform.isAndroid)
+      if (!await checkPermission())
+        if (!await requestPermission())
+          return [];
 
     final List<dynamic> docsPaths = await _channel.invokeMethod('pickImages', <String, dynamic>{
         'quantity': quantity,
@@ -36,16 +38,16 @@ class MediasPicker {
 
   static Future<List<dynamic>> pickVideos({@required int quantity}) async {
 
-    if (!await checkPermission())
-      if (!await requestPermission())
-        return [];
+    if (Platform.isAndroid)
+      if (!await checkPermission())
+        if (!await requestPermission())
+          return [];
 
     final List<dynamic> docsPaths = await _channel.invokeMethod('pickVideos', <String, dynamic>{
         'quantity': quantity,
       });
     return docsPaths;
   }
-
 
   static Future<List<dynamic>> compressImages({@required List<String> imgPaths, int maxWidth, int maxHeight, int quality}) async {
 
@@ -65,9 +67,10 @@ class MediasPicker {
       throw new ArgumentError.value(quality, 'quality cannot be negative and cannot be bigger then 100');
     }
 
-    if (!await checkPermission())
-      if (!await requestPermission())
-        return [];
+    if (Platform.isAndroid)
+      if (!await checkPermission())
+        if (!await requestPermission())
+          return [];
 
     final List<dynamic> docsPaths = await _channel.invokeMethod('compressImages', <String, dynamic>{
       'imgPaths': imgPaths,
