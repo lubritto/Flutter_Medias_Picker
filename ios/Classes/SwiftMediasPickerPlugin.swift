@@ -131,7 +131,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
                     if data != nil {
                         var img = UIImage(data: data!)
                         img = self.ResizeImage(image: img!, targetSize: CGSize(width: Double(self.maxWidth!), height: Double(self.maxHeight!)))
-                        let nData = UIImageJPEGRepresentation(img!, (CGFloat(self.quality!) / CGFloat(100)))
+                        let nData = img!.jpegData(compressionQuality: (CGFloat(self.quality!) / CGFloat(100)))
                         let guid = NSUUID().uuidString
                         let tmpFile = String(format: "image_picker_%@.jpg", guid)
                         let tmpDirec = NSTemporaryDirectory()
@@ -195,7 +195,7 @@ public class SwiftMediasPickerPlugin: NSObject, FlutterPlugin, GalleryController
             let newImage = UIGraphicsGetImageFromCurrentImageContext()
             UIGraphicsEndImageContext()
             
-            let nData = UIImageJPEGRepresentation(newImage!, (CGFloat(self.quality!) / CGFloat(100)))
+            let nData = newImage!.jpegData(compressionQuality: (CGFloat(self.quality!) / CGFloat(100)))
             let guid = NSUUID().uuidString
             let tmpFile = String(format: "image_picker_%@.jpg", guid)
             let tmpDirec = NSTemporaryDirectory()
