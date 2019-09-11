@@ -1,13 +1,3 @@
-
-
-
-and in your podfile 
-
-```sh
-platform :ios, '9.0'
-use_frameworks!
-```
-
 # Medias Picker
 
 [![pub package](https://img.shields.io/pub/v/medias_picker.svg)](https://pub.dartlang.org/packages/medias_picker)
