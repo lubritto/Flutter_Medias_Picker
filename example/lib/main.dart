@@ -1,106 +1,56 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:medias_picker/medias_picker.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
   @override
-  _MyAppState createState() => new _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  List<dynamic> docPaths;
-  @override
-  initState() {
-    super.initState();
-  }
-  
-  pickImages() async {
-    try {
+  List<String> mediaPaths;
 
-      docPaths = await MediasPicker.pickImages(quantity: 7, maxWidth: 1024, maxHeight: 1024, quality: 85);
-      
-      String firstPath = docPaths[0] as String;
+  void _getImages() async {
+    mediaPaths = await MediasPicker.pickImages(
+      quantity: 7,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      quality: 85,
+    );
 
-      List<dynamic> listCompressed = await MediasPicker.compressImages(imgPaths: [firstPath], maxWidth: 600, maxHeight: 600, quality: 100);
-      print(listCompressed);
-
-    } on PlatformException {
-
-    }
-
-    if (!mounted)
-      return;
-
-    setState(() {
-      _platformVersion = docPaths.toString();
-    });
+    if (!mounted) return;
+    setState(() {});
   }
 
-  pickVideos() async {
-    try {
-      docPaths = await MediasPicker.pickVideos(quantity: 7);
-    } on PlatformException {
+  void _getVideos() async {
+    mediaPaths = await MediasPicker.pickVideos(quantity: 7);
 
-    }
-
-    if (!mounted)
-      return;
-
-    setState(() {
-      _platformVersion = docPaths.toString();
-    });
+    if (!mounted) return;
+    setState(() {});
   }
-  
 
   @override
   Widget build(BuildContext context) {
-    return new MaterialApp(
-      home: new Scaffold(
-        appBar: new AppBar(
-          title: new Text('Plugin example app'),
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Plugin example app'),
         ),
-        body: new Center(
-          child: new Column(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              new Text('Running on: $_platformVersion\n'),
-              new MaterialButton(
-                child: new Text(
-                  "Pick image",
-                ),
-                onPressed: () {
-                  pickImages();
-                },
+              FlatButton(
+                child: Text('Get images'),
+                onPressed: _getImages,
               ),
-              new MaterialButton(
-                child: new Text(
-                  "Pick videos",
-                ),
-                onPressed: () {
-                  pickVideos();
-                },
+              FlatButton(
+                child: Text('Get videos'),
+                onPressed: _getVideos,
               ),
-              new MaterialButton(
-                child: new Text(
-                  "Delete temp folder (automatic on ios)",
-                ),
-                onPressed: () async {
-                  
-                  if (await MediasPicker.deleteAllTempFiles()) {
-                    setState(() {
-                      _platformVersion = "deleted";             
-                    });
-                  } else {
-                    setState(() {
-                      _platformVersion = "not deleted";             
-                    });
-                  }
-                },
-              ),
+              if (mediaPaths != null) Text(mediaPaths.join('\n'))
             ],
           ),
         ),

@@ -1,17 +1,31 @@
-# medias_picker
 
-A new Flutter plugin to get pictures and videos.
 
-## Getting Started
 
-For help getting started with Flutter, view our online
-[documentation](https://flutter.io/).
+and in your podfile 
 
-**This Plugin is under development, but alredy works in IOS and Android**
+```sh
+platform :ios, '9.0'
+use_frameworks!
+```
 
-For help on editing plugin code, view the [documentation](https://flutter.io/platform-plugins/#edit-code).
+# Medias Picker
 
-You need to put these styles to plugin works
+[![pub package](https://img.shields.io/pub/v/medias_picker.svg)](https://pub.dartlang.org/packages/medias_picker)
+
+A Flutter plugin for IOS and Android providing a simple way to get multiple pictures and videos.
+
+## Features:
+
+* Get multiple pictures and videos.
+* Compress images.
+
+## Installation
+
+First, add `medias_picker` as a [dependency in your pubspec.yaml file](https://flutter.io/using-packages/).
+
+### Android
+
+You need to add these styles to the android app (app/src/main/values/styles.xml).
 
 ```sh
   <style name="LibAppTheme" parent="Theme.AppCompat.Light.NoActionBar">
@@ -37,11 +51,95 @@ You need to put these styles to plugin works
   </style>
 ```
 
-add <uses-permission android:name="android.permission.CAMERA"/> in manifest
+And need to add the camera permisson. (android/app/src/main/AndroidManifest.xml).
 
-and in your podfile 
-
-```sh
-platform :ios, '9.0'
-use_frameworks!
 ```
+<uses-permission android:name="android.permission.CAMERA"/>
+```  
+
+### iOS
+
+Set the minimum version to 9.0 and add if not exists one row to the `ios/podfile` after target runner:
+
+```
+platform :ios, '9.0'
+
+...
+
+target 'Runner' do
+    use_frameworks!
+
+...
+```
+
+### Example
+
+Here is an example flutter app displaying how to use the MediasPicker.
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:medias_picker/medias_picker.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  List<String> mediaPaths;
+
+  void _getImages() async {
+    mediaPaths = await MediasPicker.pickImages(
+      quantity: 7,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      quality: 85,
+    );
+
+    if (!mounted) return;
+    setState(() {});
+  }
+  
+  void _getVideos() async {
+      mediaPaths = await MediasPicker.pickVideos(quantity: 7);
+  
+      if (!mounted) return;
+      setState(() {});
+    }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Plugin example app'),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              FlatButton(
+                child: Text('Get images'),
+                onPressed: _getImages,
+              ),
+              FlatButton(
+                child: Text('Get videos'),
+                onPressed: _getVideos,
+              ),
+              if (mediaPaths != null)
+                Text(mediaPaths.join('\n'))
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+[Feedback welcome](https://github.com/lubritto/Flutter_Medias_Picker/issues) and
+[Pull Requests](https://github.com/lubritto/Flutter_Medias_Picker/pulls) are most welcome!
