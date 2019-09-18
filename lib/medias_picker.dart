@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class MediasPicker {
-  static const MethodChannel _channel = const MethodChannel('medias_picker');
+  static const MethodChannel _channel = MethodChannel('medias_picker');
 
   static Future<List<dynamic>> pickImages(
       {@required int quantity,
@@ -13,21 +13,23 @@ class MediasPicker {
       int maxHeight,
       int quality}) async {
     if (maxWidth != null && maxWidth < 0) {
-      throw new ArgumentError.value(maxWidth, 'maxWidth cannot be negative');
+      throw ArgumentError.value(maxWidth, 'maxWidth cannot be negative');
     }
 
     if (maxHeight != null && maxHeight < 0) {
-      throw new ArgumentError.value(maxHeight, 'maxHeight cannot be negative');
+      throw ArgumentError.value(maxHeight, 'maxHeight cannot be negative');
     }
 
     if (quality != null && (quality < 0 || quality > 100)) {
-      throw new ArgumentError.value(
+      throw ArgumentError.value(
           maxWidth, 'quality cannot be negative and cannot be bigger then 100');
     }
 
-    if (Platform
-        .isAndroid) if (!await checkPermission()) if (!await requestPermission())
+    if (Platform.isAndroid &&
+        !await checkPermission() &&
+        !await requestPermission()) {
       return [];
+    }
 
     final List<dynamic> docsPaths =
         await _channel.invokeMethod('pickImages', <String, dynamic>{
@@ -40,9 +42,11 @@ class MediasPicker {
   }
 
   static Future<List<dynamic>> pickVideos({@required int quantity}) async {
-    if (Platform
-        .isAndroid) if (!await checkPermission()) if (!await requestPermission())
+    if (Platform.isAndroid &&
+        !await checkPermission() &&
+        !await requestPermission()) {
       return [];
+    }
 
     final List<dynamic> docsPaths =
         await _channel.invokeMethod('pickVideos', <String, dynamic>{
@@ -56,27 +60,29 @@ class MediasPicker {
       int maxWidth,
       int maxHeight,
       int quality}) async {
-    if (imgPaths != null && imgPaths.length <= 0) {
-      throw new ArgumentError.value(
+    if (imgPaths != null && imgPaths.isEmpty) {
+      throw ArgumentError.value(
           imgPaths, 'imgPaths needs to have 1 or more itens');
     }
 
     if (maxWidth != null && maxWidth < 0) {
-      throw new ArgumentError.value(maxWidth, 'maxWidth cannot be negative');
+      throw ArgumentError.value(maxWidth, 'maxWidth cannot be negative');
     }
 
     if (maxHeight != null && maxHeight < 0) {
-      throw new ArgumentError.value(maxHeight, 'maxHeight cannot be negative');
+      throw ArgumentError.value(maxHeight, 'maxHeight cannot be negative');
     }
 
     if (quality != null && (quality < 0 || quality > 100)) {
-      throw new ArgumentError.value(
+      throw ArgumentError.value(
           quality, 'quality cannot be negative and cannot be bigger then 100');
     }
 
-    if (Platform
-        .isAndroid) if (!await checkPermission()) if (!await requestPermission())
+    if (Platform.isAndroid &&
+        !await checkPermission() &&
+        !await requestPermission()) {
       return [];
+    }
 
     final List<dynamic> docsPaths =
         await _channel.invokeMethod('compressImages', <String, dynamic>{
